@@ -1,4 +1,3 @@
-import asyncio
 from collections.abc import AsyncGenerator
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -27,19 +26,8 @@ test_async_session_factory = async_sessionmaker(
 )
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    loop.close()
-
-
 @pytest.fixture(scope="session", autouse=True)
-async def setup_test_db(event_loop):
+async def setup_test_db():
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
