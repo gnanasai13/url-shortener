@@ -19,7 +19,7 @@ dependencies = [
     "pydantic-settings>=2.4.0",
     "python-dotenv>=1.0.1",
     "redis>=5.0.8",
-    "sqlalchemy>=2.0.32",
+    "sqlalchemy[asyncio]>=2.0.32",
     "structlog>=24.4.0",
     "uvicorn[standard]>=0.30.6",
 ]
