@@ -27,6 +27,40 @@ A backend URL-shortening service built with **FastAPI**, **MySQL**, **Redis**, a
 | Testing | pytest, pytest-asyncio, HTTPX, pytest-cov |
 | Code quality | Ruff |
 
+## Architecture
+
+The API handles authentication, link management, redirects, and rate limiting. MySQL remains the source of truth; Redis accelerates redirects and coordinates rate limits, while Celery handles work that does not need to block the redirect response.
+
+```mermaid
+flowchart LR
+    U[Client] --> API[FastAPI]
+    API --> AUTH[JWT authentication]
+    API --> RL[Rate-limit dependency]
+    RL <--> REDIS[(Redis)]
+    API --> SVC[Application services]
+    SVC --> REPO[Repositories]
+    REPO --> DB[(MySQL)]
+
+    U -->|GET /short-code| REDIR[Redirect route]
+    REDIR --> CACHE{Redis cache hit?}
+    CACHE <--> REDIS
+    CACHE -->|Miss| REPO
+    CACHE -->|Hit or resolved URL| RSP[HTTP redirect]
+    REPO --> RSP
+
+    REDIR -. enqueue click event .-> BROKER[Celery broker]
+    BROKER --> WORKER[Celery worker]
+    WORKER --> DB
+    BEAT[Celery Beat] -->|scheduled expiry cleanup| BROKER
+```
+
+**Request and data flow**
+
+- A redirect first checks the Redis cache. On a miss, the destination is resolved from MySQL and can be cached for subsequent requests.
+- Click recording is queued for background processing so analytics work does not need to delay the redirect response.
+- Celery Beat schedules expired-link cleanup; the worker records click events and performs cleanup against MySQL.
+- If click-event enqueueing is temporarily unavailable, the redirect is still returned and the enqueue failure is logged.
+
 ## Project structure
 
 ```text
@@ -78,7 +112,7 @@ Start MySQL and Redis locally, then update `DATABASE_URL` and `REDIS_URL` in `.e
 
 ```bash
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
 python -m pip install -e ".[dev]"
 cp .env.example .env
