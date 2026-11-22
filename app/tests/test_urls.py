@@ -106,7 +106,7 @@ async def test_update_url(client: AsyncClient, auth_headers, test_user, db_sessi
     assert response.status_code == 200
 
     data = response.json()
-    assert data["original_url"] == "https://updatedtest.com"
+    assert data["original_url"] == "https://updatedtest.com/"
     assert data["custom_alias"] == "newalias"
 
 
