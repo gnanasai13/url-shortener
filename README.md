@@ -89,8 +89,8 @@ uvicorn app.main:app --reload
 Run the worker and scheduler in separate terminals:
 
 ```bash
-celery -A app.workers.celery_app.celery_app worker --loglevel=info
-celery -A app.workers.celery_app.celery_app beat --loglevel=info
+celery -A app.workers.celery_app:celery_app worker --loglevel=info
+celery -A app.workers.celery_app:celery_app beat --loglevel=info
 ```
 
 ## API overview
