@@ -1,14 +1,15 @@
 import asyncio
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from celery.utils.log import get_task_logger
 from sqlalchemy import select
 
-from app.workers.celery_app import celery_app
-from app.database.session import async_session_factory
 from app.database.redis import redis_client
+from app.database.session import async_session_factory
 from app.models.short_url import ShortURL
 from app.services.analytics_service import AnalyticsService
 from app.services.redirect_service import RedirectService
+from app.workers.celery_app import celery_app
 
 logger = get_task_logger(__name__)
 
@@ -41,7 +42,7 @@ def cleanup_expired_links_task() -> None:
         async with async_session_factory() as session:
             statement = select(ShortURL).where(
                 ShortURL.expires_at <= datetime.now(UTC),
-                ShortURL.is_active == True,
+                ShortURL.is_active.is_(True),
             )
             result = await session.execute(statement)
             expired_urls = result.scalars().all()
